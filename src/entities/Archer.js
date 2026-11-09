@@ -262,9 +262,9 @@ export class Archer extends Unit {
       this.rightArmPivot.rotation.y = 0;
       this.rightArmPivot.rotation.z = 0.15;
 
-      this.bodyGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.07;
+      this.bodyGroup.position.y = Math.sin(walkCycle * 2) * 0.045;
       this.bodyGroup.rotation.x = 0.12;
-      this.bodyGroup.rotation.y = 0;
+      this.bodyGroup.rotation.y = -Math.sin(walkCycle) * 0.05;
       this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.04;
       this.headGroup.rotation.x = -0.06;
     } else {

@@ -299,9 +299,12 @@ export class Unit {
     dir.y = 0;
     dir.normalize();
 
-    // Rotate unit towards movement direction smoothly
+    // Rotate unit towards movement direction smoothly using shortest angular distance
     const targetAngle = Math.atan2(dir.x, dir.z);
-    this.mesh.rotation.y = THREE.MathUtils.lerp(this.mesh.rotation.y, targetAngle, 0.2);
+    let diff = (targetAngle - this.mesh.rotation.y) % (Math.PI * 2);
+    if (diff > Math.PI) diff -= Math.PI * 2;
+    if (diff < -Math.PI) diff += Math.PI * 2;
+    this.mesh.rotation.y += diff * 0.22;
 
     const stepDist = this.speed * delta;
     const nextPos = this.mesh.position.clone().addScaledVector(dir, stepDist);

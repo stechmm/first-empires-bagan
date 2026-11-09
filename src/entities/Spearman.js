@@ -199,9 +199,10 @@ export class Spearman extends Unit {
       this.leftArmPivot.rotation.x = -legSwing * 0.6;
       this.rightArmPivot.rotation.x = 0.3 + Math.sin(walkCycle) * 0.2;
 
-      this.bodyGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.07;
+      this.bodyGroup.position.y = Math.sin(walkCycle * 2) * 0.045;
       this.bodyGroup.rotation.x = 0.12;
-      this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.04;
+      this.bodyGroup.rotation.y = -Math.sin(walkCycle) * 0.055;
+      this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.045;
     } else {
       // Idle Ready Stance
       this.leftLegPivot.rotation.x = THREE.MathUtils.lerp(this.leftLegPivot.rotation.x, 0, 0.15);

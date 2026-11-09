@@ -7,10 +7,25 @@ export class Palace extends Building {
       ...options,
       name: options.name || 'ရွှေနန်းတော် (Royal Palace)',
       type: 'palace',
-      hp: options.hp || 1500,
+      hp: options.hp || 1600,
       size: 6
     });
 
+    this.maxDefenseSlots = 4; // Main palace can mount 4 corner defense towers
+    this.createPalace3DModel();
+  }
+
+  rebuildModel() {
+    const keep = new Set([
+      this.hpBarGroup,
+      this.selectionBoxMesh,
+      this.rallyFlagGroup,
+      this.scaffoldGroup,
+      this.constructionUIGroup
+    ]);
+    const toRemove = this.mesh.children.filter(c => !keep.has(c));
+    toRemove.forEach(c => this.mesh.remove(c));
+    this.modelGroup = null;
     this.createPalace3DModel();
   }
 
@@ -318,6 +333,98 @@ export class Palace extends Building {
     const orb = new THREE.Mesh(orbGeo, goldMat);
     orb.position.set(0, 8.45, -0.2);
     this.modelGroup.add(orb);
+
+    // -------------------------------------------------------------
+    // 9. TIER UPGRADE ENHANCEMENTS (Tier 2 & Tier 3 Royal Grandeur)
+    // -------------------------------------------------------------
+    if (this.tier >= 2) {
+      // Golden Chinthe (Guardian Lion) Statues flanking the entrance stairs
+      [-1.8, 1.8].forEach(lx => {
+        const lionGroup = new THREE.Group();
+        lionGroup.position.set(lx, 0.5, 3.8);
+
+        // Lion pedestal
+        const ped = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.4, 0.8), stoneDarkMat);
+        ped.position.y = 0.2;
+        lionGroup.add(ped);
+
+        // Lion seated body & head
+        const lBody = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.65, 0.55), goldMat);
+        lBody.position.y = 0.7;
+        lionGroup.add(lBody);
+
+        const lHead = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), goldMat);
+        lHead.position.set(0, 1.15, 0.15);
+        lionGroup.add(lHead);
+
+        // Flame mane
+        const lMane = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.35, 6), goldMat);
+        lMane.position.set(0, 1.35, -0.05);
+        lionGroup.add(lMane);
+
+        this.modelGroup.add(lionGroup);
+      });
+
+      // Royal War Banners on Palace Terrace
+      [[-3.1, 2.5], [3.1, 2.5], [-3.1, -2.5], [3.1, -2.5]].forEach(([bx, bz]) => {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 5.2, 6), teakMat);
+        pole.position.set(bx, 2.6, bz);
+        this.modelGroup.add(pole);
+
+        const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 2.0), new THREE.MeshStandardMaterial({
+          color: this.faction === 'enemy' ? 0x922b21 : 0xd4ac0d,
+          side: THREE.DoubleSide
+        }));
+        banner.position.set(bx > 0 ? bx - 0.45 : bx + 0.45, 3.6, bz);
+        this.modelGroup.add(banner);
+
+        const finial = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 6), goldMat);
+        finial.position.set(bx, 5.4, bz);
+        this.modelGroup.add(finial);
+      });
+
+      // Flaming Fire Braziers at Grand Portico
+      [[-1.4, 2.8], [1.4, 2.8]].forEach(([fx, fz]) => {
+        const brazier = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.15, 0.9, 8), goldMat);
+        brazier.position.set(fx, 1.2, fz);
+        this.modelGroup.add(brazier);
+
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 8), new THREE.MeshBasicMaterial({ color: 0xff6600 }));
+        flame.position.set(fx, 1.8, fz);
+        this.modelGroup.add(flame);
+      });
+    }
+
+    if (this.tier >= 3) {
+      // Tier 3 Imperial Citadel: Additional 4 Corner Watch Sanctuaries with golden spires
+      [[-3.4, 3.4], [3.4, 3.4], [-3.4, -3.4], [3.4, -3.4]].forEach(([cx, cz]) => {
+        const sanc = new THREE.Group();
+        sanc.position.set(cx, 0.6, cz);
+
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 2.8, 8), stoneDarkMat);
+        col.position.y = 1.4;
+        sanc.add(col);
+
+        const capRoof = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.9, 4), roofRedMat);
+        capRoof.position.y = 3.2;
+        capRoof.rotation.y = Math.PI / 4;
+        sanc.add(capRoof);
+
+        const capSpire = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.6, 6), goldMat);
+        capSpire.position.y = 3.9;
+        sanc.add(capSpire);
+
+        this.modelGroup.add(sanc);
+      });
+
+      // Radiant Golden Crown Rings on Main Spire
+      [7.1, 7.8, 8.2].forEach(y => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.28 - (y - 7.1) * 0.08, 0.05, 8, 16), goldMat);
+        ring.position.set(0, y, -0.2);
+        ring.rotation.x = Math.PI / 2;
+        this.modelGroup.add(ring);
+      });
+    }
 
     this.mesh.add(this.modelGroup);
 

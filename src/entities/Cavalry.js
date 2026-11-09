@@ -234,36 +234,54 @@ export class Cavalry extends Unit {
     if (!this.cavalryGroup || !this.legFL) return;
 
     if (this.isMoving) {
-      // High-speed Galloping Cycle
+      // Realistic 4-beat horse canter/gallop with natural footfall phase offsets
       const gallopSpeed = this.speed * 2.8;
-      const gallopCycle = this.animTime * gallopSpeed;
-      const swing = Math.sin(gallopCycle) * 0.65;
+      const t = this.animTime * gallopSpeed;
 
-      // Front and rear pairs alternate in gallop
-      this.legFL.rotation.x = swing;
-      this.legFR.rotation.x = swing * 0.9;
-      this.legBL.rotation.x = -swing;
-      this.legBR.rotation.x = -swing * 0.9;
+      const swingFL = Math.sin(t) * 0.7;
+      const swingFR = Math.sin(t - 0.5) * 0.65;
+      const swingBL = Math.sin(t + Math.PI - 0.4) * 0.65;
+      const swingBR = Math.sin(t + Math.PI) * 0.7;
 
-      // Gallop rocking of horse body and rider
-      this.cavalryGroup.position.y = Math.abs(Math.sin(gallopCycle)) * 0.12;
-      this.cavalryGroup.rotation.x = Math.sin(gallopCycle) * 0.08;
-      this.neckGroup.rotation.x = Math.sin(gallopCycle * 1.2) * 0.06;
-      this.tail.rotation.z = Math.sin(gallopCycle * 1.5) * 0.2;
+      this.legFL.rotation.x = swingFL;
+      this.legFR.rotation.x = swingFR;
+      this.legBL.rotation.x = swingBL;
+      this.legBR.rotation.x = swingBR;
 
-      // Rider sways with horse rhythm
-      this.riderGroup.rotation.x = -Math.sin(gallopCycle) * 0.08;
+      // Gallop vertical bounce & pitching
+      this.cavalryGroup.position.y = Math.max(0, Math.sin(t * 2)) * 0.14;
+      this.cavalryGroup.rotation.x = Math.sin(t) * 0.10;
+      this.cavalryGroup.rotation.z = Math.sin(t * 0.5) * 0.04;
+
+      // Horse neck bobs counter to torso pitch
+      this.neckGroup.rotation.x = -Math.cos(t) * 0.12;
+      this.neckGroup.rotation.y = Math.sin(t * 0.5) * 0.05;
+
+      // Flowing tail in the wind
+      this.tail.rotation.x = 0.35 + Math.sin(t) * 0.25;
+      this.tail.rotation.z = Math.sin(t * 1.4) * 0.22;
+
+      // Rider dynamic equestrian posture
+      this.riderGroup.rotation.x = -this.cavalryGroup.rotation.x * 0.75;
+      this.riderGroup.position.y = this.cavalryGroup.position.y * 0.4;
+      this.riderGroup.rotation.z = -this.cavalryGroup.rotation.z * 0.5;
     } else {
-      // Idle horse breathing & tail flick
-      this.legFL.rotation.x = THREE.MathUtils.lerp(this.legFL.rotation.x, 0, 0.1);
-      this.legFR.rotation.x = THREE.MathUtils.lerp(this.legFR.rotation.x, 0, 0.1);
-      this.legBL.rotation.x = THREE.MathUtils.lerp(this.legBL.rotation.x, 0, 0.1);
-      this.legBR.rotation.x = THREE.MathUtils.lerp(this.legBR.rotation.x, 0, 0.1);
+      this.legFL.rotation.x = THREE.MathUtils.lerp(this.legFL.rotation.x, 0, 0.12);
+      this.legFR.rotation.x = THREE.MathUtils.lerp(this.legFR.rotation.x, 0, 0.12);
+      this.legBL.rotation.x = THREE.MathUtils.lerp(this.legBL.rotation.x, 0, 0.12);
+      this.legBR.rotation.x = THREE.MathUtils.lerp(this.legBR.rotation.x, 0, 0.12);
 
-      const breath = Math.sin(this.animTime * 2.0);
-      this.cavalryGroup.position.y = breath * 0.02;
-      this.neckGroup.rotation.x = breath * 0.04;
-      this.tail.rotation.z = Math.sin(this.animTime * 3.0) * 0.15;
+      this.cavalryGroup.rotation.x = THREE.MathUtils.lerp(this.cavalryGroup.rotation.x, 0, 0.1);
+      this.cavalryGroup.rotation.z = THREE.MathUtils.lerp(this.cavalryGroup.rotation.z, 0, 0.1);
+      this.riderGroup.rotation.x = THREE.MathUtils.lerp(this.riderGroup.rotation.x, 0, 0.1);
+
+      // Living idle: gentle breathing & casual tail flick
+      const breath = Math.sin(this.animTime * 1.8);
+      this.cavalryGroup.position.y = breath * 0.025;
+      this.neckGroup.rotation.x = breath * 0.045;
+      this.neckGroup.rotation.y = Math.sin(this.animTime * 0.6) * 0.06;
+      this.tail.rotation.x = 0.1 + Math.sin(this.animTime * 2.2) * 0.08;
+      this.tail.rotation.z = Math.sin(this.animTime * 2.8) * 0.18;
     }
   }
 }

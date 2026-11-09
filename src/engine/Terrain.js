@@ -8,6 +8,7 @@ export class Terrain {
     this.trees = [];
     this.balloons = [];
     this.animatedBoats = [];
+    this.animatedCarts = [];
     this.waterVertices = [];
 
     this.createProceduralGround();
@@ -411,34 +412,128 @@ export class Terrain {
     makeChinthe(12, 14, Math.PI);
     makeChinthe(-12, 14, Math.PI);
 
-    // 2. Traditional Wooden Ox-Cart (ပုဂံ နွားလှည်း)
+    // 2. Animated Traditional Burmese Ox-Cart (ပုဂံ သဘာဝ နွားလှည်းယာဉ်)
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.8 });
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.7 });
+    const oxMat = new THREE.MeshStandardMaterial({ color: 0xd7ccc8, roughness: 0.85 });
+    const hornMat = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.6 });
 
-    const cart = new THREE.Group();
-    cart.position.set(22, 0.6, -18);
-    cart.rotation.y = 0.6;
+    const cartGroup = new THREE.Group();
+    cartGroup.position.set(18, 0.6, -14);
 
-    // Cart Bed
-    const cartBed = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 2.6), woodMat);
-    cart.add(cartBed);
+    // Cart bed & side rails
+    const cartBed = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 2.4), woodMat);
+    cartBed.position.y = 0.5;
+    cartBed.castShadow = true;
+    cartGroup.add(cartBed);
 
-    // High Spoked Wheels
-    [-0.95, 0.95].forEach(wx => {
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.12, 12), wheelMat);
-      wheel.position.set(wx, 0, 0);
-      wheel.rotation.z = Math.PI / 2;
-      cart.add(wheel);
+    [-0.75, 0.75].forEach(rx => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 2.3), woodMat);
+      rail.position.set(rx, 0.78, 0);
+      cartGroup.add(rail);
     });
 
-    // Clay Pots in Cart
-    const potMat = new THREE.MeshStandardMaterial({ color: 0x873600 });
+    // Rotating Spoked Wheels
+    const wheels = [];
+    [-0.92, 0.92].forEach(wx => {
+      const wheelHub = new THREE.Group();
+      wheelHub.position.set(wx, 0.5, 0);
+
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.1, 14), wheelMat);
+      rim.rotation.z = Math.PI / 2;
+      wheelHub.add(rim);
+
+      for (let s = 0; s < 4; s++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.2, 0.04), woodMat);
+        spoke.rotation.x = (s * Math.PI) / 4;
+        wheelHub.add(spoke);
+      }
+      cartGroup.add(wheelHub);
+      wheels.push(wheelHub);
+    });
+
+    // Cargo in cart: sacks of grain & clay water pots
+    const sackMat = new THREE.MeshStandardMaterial({ color: 0xc8ad7f, roughness: 0.9 });
     for (let i = 0; i < 3; i++) {
-      const pot = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 6), potMat);
-      pot.position.set((i - 1) * 0.45, 0.35, 0.2);
-      cart.add(pot);
+      const sack = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.35, 0.6), sackMat);
+      sack.position.set((i - 1) * 0.42, 0.75, -0.4);
+      sack.rotation.y = 0.2 * i;
+      cartGroup.add(sack);
     }
-    this.scene.add(cart);
+    const potMat = new THREE.MeshStandardMaterial({ color: 0xba4a00, roughness: 0.8 });
+    for (let i = 0; i < 2; i++) {
+      const pot = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), potMat);
+      pot.position.set((i - 0.5) * 0.5, 0.8, 0.45);
+      cartGroup.add(pot);
+    }
+
+    // Draught Ox / Bull (နွားသိုး) pulling the cart
+    const oxGroup = new THREE.Group();
+    oxGroup.position.set(0, 0, 2.6);
+
+    const oxBody = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 1.6), oxMat);
+    oxBody.position.y = 0.95;
+    oxBody.castShadow = true;
+    oxGroup.add(oxBody);
+
+    const hump = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), oxMat);
+    hump.position.set(0, 1.42, 0.35);
+    oxGroup.add(hump);
+
+    const oxHeadGroup = new THREE.Group();
+    oxHeadGroup.position.set(0, 1.2, 0.95);
+
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.45, 0.6), oxMat);
+    headMesh.position.set(0, 0, 0.2);
+    oxHeadGroup.add(headMesh);
+
+    [-0.22, 0.22].forEach(hx => {
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.38, 6), hornMat);
+      horn.position.set(hx, 0.28, 0.1);
+      horn.rotation.z = hx > 0 ? -0.55 : 0.55;
+      horn.rotation.x = -0.3;
+      oxHeadGroup.add(horn);
+    });
+    oxGroup.add(oxHeadGroup);
+
+    const legGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.85, 6);
+    const oxLegFL = new THREE.Mesh(legGeo, oxMat);
+    oxLegFL.position.set(-0.3, 0.45, 0.55);
+    oxGroup.add(oxLegFL);
+
+    const oxLegFR = new THREE.Mesh(legGeo, oxMat);
+    oxLegFR.position.set(0.3, 0.45, 0.55);
+    oxGroup.add(oxLegFR);
+
+    const oxLegBL = new THREE.Mesh(legGeo, oxMat);
+    oxLegBL.position.set(-0.3, 0.45, -0.55);
+    oxGroup.add(oxLegBL);
+
+    const oxLegBR = new THREE.Mesh(legGeo, oxMat);
+    oxLegBR.position.set(0.3, 0.45, -0.55);
+    oxGroup.add(oxLegBR);
+
+    [-0.5, 0.5].forEach(sx => {
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 4), woodMat);
+      shaft.position.set(sx, 0.7, 1.4);
+      shaft.rotation.x = Math.PI / 2;
+      cartGroup.add(shaft);
+    });
+
+    cartGroup.add(oxGroup);
+    this.scene.add(cartGroup);
+
+    this.animatedCarts.push({
+      group: cartGroup,
+      wheels,
+      oxHeadGroup,
+      oxLegFL,
+      oxLegFR,
+      oxLegBL,
+      oxLegBR,
+      pathT: 0,
+      speed: 1.6
+    });
   }
 
   createHotAirBalloons() {
@@ -533,6 +628,42 @@ export class Terrain {
     // 3. Dynamic river water shimmer
     if (this.waterMat) {
       this.waterMat.roughness = 0.12 + Math.sin(elapsed * 1.5) * 0.04;
+    }
+
+    // 4. Traditional Burmese Ox-Cart travel locomotion
+    for (const c of this.animatedCarts) {
+      c.pathT += delta * 0.04 * (c.speed || 1.0);
+      const angle = c.pathT * Math.PI * 2;
+      // Loop route along Bagan countryside
+      const cx = 22 + Math.cos(angle) * 16;
+      const cz = -16 + Math.sin(angle) * 20;
+      c.group.position.set(cx, 0.45, cz);
+
+      // Facing travel tangent
+      const nextX = 22 + Math.cos(angle + 0.05) * 16;
+      const nextZ = -16 + Math.sin(angle + 0.05) * 20;
+      c.group.lookAt(nextX, 0.45, nextZ);
+
+      // Rolling wheels rotation
+      const rollSpeed = (c.speed || 1.6) * delta * 2.8;
+      for (const w of c.wheels) {
+        w.children.forEach(mesh => {
+          mesh.rotation.x += rollSpeed;
+        });
+      }
+
+      // Draft ox walking animation (natural stride)
+      const walkCycle = elapsed * 3.8;
+      c.oxLegFL.rotation.x = Math.sin(walkCycle) * 0.45;
+      c.oxLegFR.rotation.x = -Math.sin(walkCycle) * 0.45;
+      c.oxLegBL.rotation.x = -Math.sin(walkCycle) * 0.45;
+      c.oxLegBR.rotation.x = Math.sin(walkCycle) * 0.45;
+
+      // Ox head bobbing
+      c.oxHeadGroup.rotation.x = Math.sin(walkCycle) * 0.12;
+
+      // Cart gentle body rumble
+      c.group.rotation.z = Math.sin(walkCycle * 2) * 0.02;
     }
   }
 }

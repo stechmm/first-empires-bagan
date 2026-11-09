@@ -364,7 +364,7 @@ export class Villager extends Unit {
       this.rightLegPivot.rotation.x = -0.2;
       this.leftArmPivot.rotation.x = 0.25;
     } else if (this.isMoving) {
-      // Locomotion (with extra forward lean if carrying heavy sack)
+      // Natural human bipedal walking gait with pelvic sway & torso counter-rotation
       const walkSpeed = this.speed * 2.5;
       const walkCycle = this.animTime * walkSpeed;
       const legSwing = Math.sin(walkCycle) * 0.65;
@@ -372,13 +372,18 @@ export class Villager extends Unit {
       this.leftLegPivot.rotation.x = legSwing;
       this.rightLegPivot.rotation.x = -legSwing;
 
-      this.leftArmPivot.rotation.x = -legSwing * 0.7;
-      this.rightArmPivot.rotation.x = legSwing * 0.6;
+      // Natural counter arm swing with slight outwards angle
+      this.leftArmPivot.rotation.x = -legSwing * 0.65;
+      this.leftArmPivot.rotation.z = -0.08;
+      this.rightArmPivot.rotation.x = legSwing * 0.65;
+      this.rightArmPivot.rotation.z = 0.08;
 
       const isLoaded = (this.carrying.amount > 0);
-      this.bodyGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.07;
-      this.bodyGroup.rotation.x = isLoaded ? 0.22 : 0.12; // Extra forward lean when loaded
-      this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.05;
+      // Smooth double-frequency vertical bounce (natural center of mass fluctuation)
+      this.bodyGroup.position.y = Math.sin(walkCycle * 2) * 0.045;
+      this.bodyGroup.rotation.x = isLoaded ? 0.22 : 0.10; // Extra forward lean when loaded
+      this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.045; // Pelvic hip sway
+      this.bodyGroup.rotation.y = -Math.sin(walkCycle) * 0.055; // Shoulder counter-twist
       this.headGroup.rotation.x = isLoaded ? -0.12 : -0.06;
     } else {
       // Idle Farmer Stance

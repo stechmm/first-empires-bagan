@@ -451,6 +451,68 @@ export class HUD {
         info.textContent = '⛩️ သစ်တပ် တံခါးကြီး (မဟာမိတ်များအတွက် အလိုအလျောက် ပွင့်ပေးပြီး ရန်သူများကို ပိတ်ဆို့တားဆီးသည်)';
         this.entityActionsEl.appendChild(info);
       }
+
+      // === UPGRADE & DEFENSE PANEL (all player buildings) ===
+      if (building.faction === 'player' && !building.underConstruction) {
+        // Tier upgrade button
+        const tierDiv = document.createElement('div');
+        tierDiv.style.cssText = 'margin-top:8px; border-top: 1px solid #555; padding-top:6px;';
+
+        const tierLabel = document.createElement('div');
+        tierLabel.style.cssText = 'color:#f1c40f; font-size:11px; font-weight:bold; margin-bottom:4px;';
+        tierLabel.textContent = `🏗️ အဆင့်: ${building.tier || 1} / ${building.maxTier || 3}`;
+        tierDiv.appendChild(tierLabel);
+
+        if ((building.tier || 1) < (building.maxTier || 3)) {
+          const cost = building.getUpgradeCost ? building.getUpgradeCost() : null;
+          const upgradeBtn = document.createElement('button');
+          upgradeBtn.className = 'action-btn unit-recruit-card';
+          upgradeBtn.style.background = building.canUpgrade && building.canUpgrade()
+            ? 'linear-gradient(135deg, #1a5276 0%, #2e86c1 100%)'
+            : 'linear-gradient(135deg, #333 0%, #555 100%)';
+          upgradeBtn.style.opacity = building.canUpgrade && building.canUpgrade() ? '1' : '0.6';
+          upgradeBtn.innerHTML = `
+            <div class="thumb-container"><span style="font-size:18px">⬆️</span></div>
+            <div class="recruit-text-box">
+              <span class="recruit-title">အဆင့် ${(building.tier||1)+1} သို့မြှင့်တင်</span>
+              <span class="recruit-cost">${cost ? `🪵${cost.wood} 🧱${cost.stone} 🪙${cost.gold}` : ''}</span>
+            </div>`;
+          upgradeBtn.onclick = () => {
+            if (building.upgrade && building.upgrade()) {
+              this.updateSelection();
+            }
+          };
+          tierDiv.appendChild(upgradeBtn);
+        } else {
+          const maxLabel = document.createElement('div');
+          maxLabel.style.cssText = 'color:#2ecc71; font-size:11px; padding:4px;';
+          maxLabel.textContent = '✅ အမြင့်ဆုံးအဆင့်ရောက်ပြီ';
+          tierDiv.appendChild(maxLabel);
+        }
+
+        // Defense tower button
+        const defBtn = document.createElement('button');
+        defBtn.className = 'action-btn unit-recruit-card';
+        const hasSlots = !building.defenseSlots || building.defenseSlots.length < (building.maxDefenseSlots || 2);
+        defBtn.style.background = hasSlots
+          ? 'linear-gradient(135deg, #6e2c00 0%, #a04000 100%)'
+          : 'linear-gradient(135deg, #333 0%, #444 100%)';
+        defBtn.style.opacity = hasSlots ? '1' : '0.5';
+        defBtn.innerHTML = `
+          <div class="thumb-container"><span style="font-size:18px">🏹</span></div>
+          <div class="recruit-text-box">
+            <span class="recruit-title">ကာကွယ်ရေးစင် တပ်ဆင် ${building.defenseSlots ? building.defenseSlots.length : 0}/${building.maxDefenseSlots || 2}</span>
+            <span class="recruit-cost">🪵80 🧱40</span>
+          </div>`;
+        defBtn.onclick = () => {
+          if (building.addDefenseTower && building.addDefenseTower()) {
+            this.updateSelection();
+          }
+        };
+        tierDiv.appendChild(defBtn);
+
+        this.entityActionsEl.appendChild(tierDiv);
+      }
     } else if (resource) {
       this.entityNameEl.textContent = resource.name;
       this.entityTypeEl.textContent = 'သဘာဝ အရင်းအမြစ် စခန်း';

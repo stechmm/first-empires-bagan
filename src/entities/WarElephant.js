@@ -358,26 +358,32 @@ export class WarElephant extends Unit {
         this.headGroup.rotation.x = THREE.MathUtils.lerp(this.headGroup.rotation.x, 0, t);
       }
     } else if (this.isMoving) {
+      // Authentic Elephant Lateral Walk Sequence (Amble/Pacing Gait)
+      // Elephants move with a steady 4-beat lateral sequence: BL -> FL -> BR -> FR
       const walkSpeed = this.speed * 2.2;
       const walkCycle = this.animTime * walkSpeed;
-      const swing = Math.sin(walkCycle) * 0.42;
 
-      this.legFL.rotation.x = swing;
-      this.legBR.rotation.x = swing;
-      this.legFR.rotation.x = -swing;
-      this.legBL.rotation.x = -swing;
+      this.legBL.rotation.x = Math.sin(walkCycle) * 0.45;
+      this.legFL.rotation.x = Math.sin(walkCycle - 1.57) * 0.45;
+      this.legBR.rotation.x = Math.sin(walkCycle - 3.14) * 0.45;
+      this.legFR.rotation.x = Math.sin(walkCycle - 4.71) * 0.45;
 
-      this.bodyGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.08;
-      this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.04;
+      // Lumbering heavy body heave & side-to-side weight transfer
+      this.bodyGroup.position.y = Math.sin(walkCycle * 2) * 0.05;
+      this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.065;
+      this.bodyGroup.rotation.x = Math.cos(walkCycle) * 0.03;
 
-      this.howdahGroup.rotation.z = -Math.sin(walkCycle) * 0.06;
-      this.howdahGroup.rotation.x = Math.cos(walkCycle * 2) * 0.03;
+      // Howdah dynamic inertia counter-sway
+      this.howdahGroup.rotation.z = -this.bodyGroup.rotation.z * 1.25;
+      this.howdahGroup.rotation.x = -Math.cos(walkCycle) * 0.06;
 
-      this.trunkPivot.rotation.z = Math.sin(walkCycle * 0.8) * 0.28;
-      this.trunkPivot.rotation.x = (Math.PI / 4) + Math.cos(walkCycle) * 0.12;
-      this.leftEar.rotation.y = Math.sin(walkCycle * 1.5) * 0.18;
-      this.rightEar.rotation.y = -Math.sin(walkCycle * 1.5) * 0.18;
-      this.headGroup.rotation.x = Math.sin(walkCycle) * 0.06;
+      // Natural trunk swinging & ear flapping
+      this.trunkPivot.rotation.z = Math.sin(walkCycle * 0.5) * 0.32;
+      this.trunkPivot.rotation.x = (Math.PI / 4) + Math.sin(walkCycle) * 0.16;
+      this.leftEar.rotation.y = 0.12 + Math.sin(this.animTime * 2.2) * 0.22;
+      this.rightEar.rotation.y = -0.12 - Math.sin(this.animTime * 2.2) * 0.22;
+      this.headGroup.rotation.x = Math.sin(walkCycle) * 0.07;
+      this.headGroup.rotation.y = Math.sin(walkCycle * 0.5) * 0.08;
     } else {
       this.legFL.rotation.x = THREE.MathUtils.lerp(this.legFL.rotation.x, 0, 0.1);
       this.legFR.rotation.x = THREE.MathUtils.lerp(this.legFR.rotation.x, 0, 0.1);
@@ -389,10 +395,10 @@ export class WarElephant extends Unit {
       this.bodyGroup.rotation.x = THREE.MathUtils.lerp(this.bodyGroup.rotation.x, 0, 0.1);
       this.bodyGroup.rotation.z = THREE.MathUtils.lerp(this.bodyGroup.rotation.z, 0, 0.1);
 
-      this.trunkPivot.rotation.z = Math.sin(this.animTime * 1.2) * 0.15;
-      this.trunkPivot.rotation.x = (Math.PI / 4) + breath * 0.08;
-      this.leftEar.rotation.y = Math.sin(this.animTime * 2.5) * 0.1;
-      this.rightEar.rotation.y = -Math.sin(this.animTime * 2.5) * 0.1;
+      this.trunkPivot.rotation.z = Math.sin(this.animTime * 1.2) * 0.18;
+      this.trunkPivot.rotation.x = (Math.PI / 4) + breath * 0.1;
+      this.leftEar.rotation.y = 0.1 + Math.sin(this.animTime * 2.0) * 0.14;
+      this.rightEar.rotation.y = -0.1 - Math.sin(this.animTime * 2.0) * 0.14;
     }
   }
 }

@@ -39,6 +39,11 @@ export class Building {
     this.scaffoldGroup = null;
     this.constructionUIGroup = null;
 
+    this.tier = options.tier || 1;
+    this.maxTier = 3;
+    this.defenseSlots = []; // array of attached defense towers
+    this.maxDefenseSlots = 2; // most buildings get 2 defense slots
+
     this.mesh = new THREE.Group();
     this.mesh.position.set(startX, 0, startZ);
 
@@ -432,5 +437,170 @@ export class Building {
     } else {
       this.trainingTimer = 0;
     }
+
+    this._updateDefenseTowers(delta);
+  }
+
+  getUpgradeCost() {
+    const nextTier = this.tier + 1;
+    if (nextTier > this.maxTier) return null;
+    const costs = {
+      2: { wood: 200, stone: 100, gold: 50 },
+      3: { wood: 350, stone: 200, gold: 120 }
+    };
+    return costs[nextTier];
+  }
+
+  canUpgrade() {
+    if (this.tier >= this.maxTier) return false;
+    if (this.underConstruction) return false;
+    const cost = this.getUpgradeCost();
+    if (!cost) return false;
+    const res = this.game.economySystem.resources;
+    return res.wood >= cost.wood && res.stone >= cost.stone && res.gold >= cost.gold;
+  }
+
+  upgrade() {
+    if (!this.canUpgrade()) return false;
+    const cost = this.getUpgradeCost();
+    const res = this.game.economySystem.resources;
+    res.wood -= cost.wood;
+    res.stone -= cost.stone;
+    res.gold -= cost.gold;
+    this.game.economySystem.updateUI();
+
+    this.tier++;
+    this.maxHp = Math.round(this.maxHp * 1.4);
+    this.hp = Math.min(this.hp + Math.round(this.maxHp * 0.3), this.maxHp);
+
+    // Rebuild model - remove old modelGroup
+    if (this.modelGroup) {
+      this.mesh.remove(this.modelGroup);
+      this.modelGroup = null;
+    }
+    // Call subclass rebuild
+    if (this.rebuildModel) this.rebuildModel();
+
+    if (this.game.hud) {
+      this.game.hud.showNotification(`🏗️ ${this.name} — အဆင့် ${this.tier} အဆင့်မြင့်တင်ပြီး!`, 'success');
+      this.game.hud.showFloatingText(`⬆️ Tier ${this.tier}`, this.mesh.position, '#f1c40f');
+    }
+    if (this.game.soundSystem) this.game.soundSystem.playHammer();
+    return true;
+  }
+
+  // Defense tower attachment
+  addDefenseTower() {
+    if (this.defenseSlots.length >= this.maxDefenseSlots) {
+      if (this.game.hud) this.game.hud.showNotification('ကာကွယ်ရေးစင် အများဆုံး ' + this.maxDefenseSlots + ' ခုသာထည့်နိုင်သည်!', 'warning');
+      return false;
+    }
+    // Cost: wood 80, stone 40
+    const res = this.game.economySystem.resources;
+    if (res.wood < 80 || res.stone < 40) {
+      if (this.game.hud) this.game.hud.showNotification('🪵80 🧱40 လိုအပ်သည်!', 'warning');
+      return false;
+    }
+    res.wood -= 80;
+    res.stone -= 40;
+    this.game.economySystem.updateUI();
+
+    // Create mini archer tower mesh attached to building corner
+    const slot = this.defenseSlots.length;
+    const towerGroup = this._buildDefenseTowerMesh(slot);
+    this.mesh.add(towerGroup);
+
+    // Defense tower attack logic
+    const defTower = {
+      group: towerGroup,
+      attackRange: 14 + this.tier * 2,
+      attackDamage: 12 + this.tier * 4,
+      attackCooldown: 1.8,
+      attackTimer: 0,
+      scanTimer: 0,
+      currentTarget: null
+    };
+    this.defenseSlots.push(defTower);
+
+    if (this.game.hud) {
+      this.game.hud.showNotification('🏹 ကာကွယ်ရေးစင် တပ်ဆင်ပြီး!', 'success');
+      this.game.hud.showFloatingText('🏹 +ကာကွယ်ရေးစင်', this.mesh.position, '#e67e22');
+    }
+    return true;
+  }
+
+  _buildDefenseTowerMesh(slotIndex) {
+    const g = new THREE.Group();
+    // Position at building corners
+    const half = (this.size || 4) * 0.5 + 0.3;
+    const corners = [[-half, half], [half, half], [-half, -half], [half, -half]];
+    const [cx, cz] = corners[slotIndex % 4];
+    g.position.set(cx, 0, cz);
+
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.8 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x935116, roughness: 0.9 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0xa04000, roughness: 0.7 });
+
+    // Base pillar
+    const pil = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 3.5, 8), stoneMat);
+    pil.position.y = 1.75;
+    pil.castShadow = true;
+    g.add(pil);
+
+    // Platform
+    const plat = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.2, 1.1), woodMat);
+    plat.position.y = 3.6;
+    g.add(plat);
+
+    // Railing
+    const railGeo = new THREE.BoxGeometry(1.0, 0.5, 0.1);
+    [0, Math.PI/2, Math.PI, -Math.PI/2].forEach((rot, i) => {
+      const r = new THREE.Mesh(railGeo, woodMat);
+      r.rotation.y = rot;
+      r.position.set(Math.sin(rot)*0.5, 4.0, Math.cos(rot)*0.5);
+      g.add(r);
+    });
+
+    // Roof cone
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.9, 4), roofMat);
+    roof.position.y = 4.7;
+    roof.rotation.y = Math.PI/4;
+    g.add(roof);
+
+    // Finial
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0xd4ac0d, metalness: 0.8 }));
+    fin.position.y = 5.3;
+    g.add(fin);
+
+    return g;
+  }
+
+  _updateDefenseTowers(delta) {
+    if (!this.defenseSlots.length) return;
+    const opposingFaction = this.faction === 'player' ? 'enemy' : 'player';
+
+    this.defenseSlots.forEach(dt => {
+      dt.scanTimer += delta;
+      if (dt.scanTimer >= 0.5) {
+        dt.scanTimer = 0;
+        let best = null, bestDist = dt.attackRange;
+        for (const u of this.game.units) {
+          if (u.faction === opposingFaction && u.hp > 0) {
+            const d = this.mesh.position.distanceTo(u.mesh.position);
+            if (d < bestDist) { bestDist = d; best = u; }
+          }
+        }
+        dt.currentTarget = best;
+      }
+
+      if (dt.currentTarget && dt.currentTarget.hp > 0) {
+        dt.attackTimer += delta;
+        if (dt.attackTimer >= dt.attackCooldown) {
+          dt.attackTimer = 0;
+          const src = { mesh: { position: this.mesh.position.clone().add(dt.group.position).add(new THREE.Vector3(0, 4.5, 0)) }, faction: this.faction };
+          if (this.game.combatVFX) this.game.combatVFX.spawnArrow(src, dt.currentTarget, dt.attackDamage);
+        }
+      }
+    });
   }
 }

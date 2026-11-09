@@ -272,10 +272,10 @@ export class Swordsman extends Unit {
       this.rightArmPivot.rotation.z = 0.15;
 
       // Torso athletic bounce & forward sprint lean
-      this.bodyGroup.position.y = Math.abs(Math.sin(walkCycle)) * 0.08;
+      this.bodyGroup.position.y = Math.sin(walkCycle * 2) * 0.05;
       this.bodyGroup.position.z = 0;
       this.bodyGroup.rotation.x = 0.14; // Forward lean
-      this.bodyGroup.rotation.y = 0;
+      this.bodyGroup.rotation.y = -Math.sin(walkCycle) * 0.06; // Shoulder counter-twist
       this.bodyGroup.rotation.z = Math.sin(walkCycle) * 0.05; // Hip sway
       this.headGroup.rotation.x = -0.08; // Head looks ahead
     } else {
