@@ -504,6 +504,84 @@ html, body {
   transition: width 0.1s linear;
 }
 
+.deck-divider {
+  width: 1px;
+  height: 58px;
+  background: linear-gradient(180deg, transparent, rgba(241, 196, 15, 0.4), transparent);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.building-upgrade-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 3px 6px !important;
+  min-width: 86px !important;
+  width: 86px !important;
+  height: 74px !important;
+  background: linear-gradient(180deg, #1a2f42 0%, #0d1a24 100%) !important;
+  border: 1.5px solid #2980b9 !important;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-sizing: border-box !important;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.building-upgrade-card:hover:not(:disabled) {
+  border-color: #3498db !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.4);
+}
+
+.building-defense-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 3px 6px !important;
+  min-width: 86px !important;
+  width: 86px !important;
+  height: 74px !important;
+  background: linear-gradient(180deg, #3d2314 0%, #1c0e07 100%) !important;
+  border: 1.5px solid #d35400 !important;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-sizing: border-box !important;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.building-defense-card:hover:not(:disabled) {
+  border-color: #e67e22 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(230, 126, 34, 0.4);
+}
+
+.card-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  background: #2980b9;
+  border: 1px solid #fff;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 8px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  z-index: 5;
+}
+
 .recruit-text-box {
   display: flex;
   flex-direction: column;

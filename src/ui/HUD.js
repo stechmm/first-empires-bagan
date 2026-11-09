@@ -344,7 +344,7 @@ export class HUD {
       }
     } else if (building) {
       this.entityNameEl.textContent = building.name;
-      this.entityTypeEl.textContent = 'တော်ဝင် အဆောက်အအုံ';
+      this.entityTypeEl.textContent = `တော်ဝင် အဆောက်အအုံ • အဆင့် ${building.tier || 1}`;
       this.entityAvatarEl.textContent = building.type === 'palace' ? '🏛️' : (building.type === 'pagoda' ? '🛕' : (building.type === 'stables' ? '🐎' : (building.type === 'elephant_pen' ? '🐘' : (building.type === 'blacksmith' ? '🔥' : (building.type === 'watchtower' ? '🏹' : '⛺')))));
       this.updateHealthDisplay(building);
 
@@ -454,64 +454,83 @@ export class HUD {
 
       // === UPGRADE & DEFENSE PANEL (all player buildings) ===
       if (building.faction === 'player' && !building.underConstruction) {
-        // Tier upgrade button
-        const tierDiv = document.createElement('div');
-        tierDiv.style.cssText = 'margin-top:8px; border-top: 1px solid #555; padding-top:6px;';
+        // Vertical divider if there were previous production cards
+        if (this.entityActionsEl.children.length > 0) {
+          const divider = document.createElement('div');
+          divider.className = 'deck-divider';
+          this.entityActionsEl.appendChild(divider);
+        }
 
-        const tierLabel = document.createElement('div');
-        tierLabel.style.cssText = 'color:#f1c40f; font-size:11px; font-weight:bold; margin-bottom:4px;';
-        tierLabel.textContent = `🏗️ အဆင့်: ${building.tier || 1} / ${building.maxTier || 3}`;
-        tierDiv.appendChild(tierLabel);
+        const currentTier = building.tier || 1;
+        const maxTier = building.maxTier || 3;
 
-        if ((building.tier || 1) < (building.maxTier || 3)) {
+        // 1. Upgrade Button Card
+        if (currentTier < maxTier) {
           const cost = building.getUpgradeCost ? building.getUpgradeCost() : null;
+          const canUp = building.canUpgrade ? building.canUpgrade() : false;
           const upgradeBtn = document.createElement('button');
-          upgradeBtn.className = 'action-btn unit-recruit-card';
-          upgradeBtn.style.background = building.canUpgrade && building.canUpgrade()
-            ? 'linear-gradient(135deg, #1a5276 0%, #2e86c1 100%)'
-            : 'linear-gradient(135deg, #333 0%, #555 100%)';
-          upgradeBtn.style.opacity = building.canUpgrade && building.canUpgrade() ? '1' : '0.6';
+          upgradeBtn.className = 'action-btn building-upgrade-card';
+          upgradeBtn.style.opacity = canUp ? '1.0' : '0.65';
           upgradeBtn.innerHTML = `
-            <div class="thumb-container"><span style="font-size:18px">⬆️</span></div>
+            <div class="thumb-container" style="border-color: #2980b9;">
+              <span style="font-size: 18px;">⬆️</span>
+              <div class="card-badge" style="background:#2980b9;">Lv.${currentTier + 1}</div>
+            </div>
             <div class="recruit-text-box">
-              <span class="recruit-title">အဆင့် ${(building.tier||1)+1} သို့မြှင့်တင်</span>
+              <span class="recruit-title" style="color:#5dade2;">အဆင့် ${currentTier + 1} တိုး</span>
               <span class="recruit-cost">${cost ? `🪵${cost.wood} 🧱${cost.stone} 🪙${cost.gold}` : ''}</span>
-            </div>`;
+            </div>
+          `;
+          upgradeBtn.title = `အဆောက်အအုံကို အဆင့် ${currentTier + 1} သို့မြှင့်တင်ပါ`;
           upgradeBtn.onclick = () => {
             if (building.upgrade && building.upgrade()) {
               this.updateSelection();
             }
           };
-          tierDiv.appendChild(upgradeBtn);
+          this.entityActionsEl.appendChild(upgradeBtn);
         } else {
-          const maxLabel = document.createElement('div');
-          maxLabel.style.cssText = 'color:#2ecc71; font-size:11px; padding:4px;';
-          maxLabel.textContent = '✅ အမြင့်ဆုံးအဆင့်ရောက်ပြီ';
-          tierDiv.appendChild(maxLabel);
+          const maxCard = document.createElement('div');
+          maxCard.className = 'building-upgrade-card';
+          maxCard.style.cursor = 'default';
+          maxCard.style.borderColor = '#27ae60';
+          maxCard.style.background = 'linear-gradient(180deg, #143521 0%, #0d1f14 100%)';
+          maxCard.innerHTML = `
+            <div class="thumb-container" style="border-color:#2ecc71;">
+              <span style="font-size: 18px;">👑</span>
+            </div>
+            <div class="recruit-text-box">
+              <span class="recruit-title" style="color:#2ecc71;">အမြင့်ဆုံး</span>
+              <span class="recruit-cost" style="color:#f1c40f;">Lv.${maxTier} အဆင့်</span>
+            </div>
+          `;
+          this.entityActionsEl.appendChild(maxCard);
         }
 
-        // Defense tower button
+        // 2. Defense Tower Button Card
+        const maxDefenseSlots = building.maxDefenseSlots || 2;
+        const slotCount = building.defenseSlots ? building.defenseSlots.length : 0;
+        const hasSlots = slotCount < maxDefenseSlots;
+
         const defBtn = document.createElement('button');
-        defBtn.className = 'action-btn unit-recruit-card';
-        const hasSlots = !building.defenseSlots || building.defenseSlots.length < (building.maxDefenseSlots || 2);
-        defBtn.style.background = hasSlots
-          ? 'linear-gradient(135deg, #6e2c00 0%, #a04000 100%)'
-          : 'linear-gradient(135deg, #333 0%, #444 100%)';
-        defBtn.style.opacity = hasSlots ? '1' : '0.5';
+        defBtn.className = 'action-btn building-defense-card';
+        defBtn.style.opacity = hasSlots ? '1.0' : '0.6';
         defBtn.innerHTML = `
-          <div class="thumb-container"><span style="font-size:18px">🏹</span></div>
+          <div class="thumb-container" style="border-color: #d35400;">
+            <span style="font-size: 18px;">🏹</span>
+            <div class="card-badge" style="background:${hasSlots ? '#d35400' : '#7f8c8d'};">${slotCount}/${maxDefenseSlots}</div>
+          </div>
           <div class="recruit-text-box">
-            <span class="recruit-title">ကာကွယ်ရေးစင် တပ်ဆင် ${building.defenseSlots ? building.defenseSlots.length : 0}/${building.maxDefenseSlots || 2}</span>
-            <span class="recruit-cost">🪵80 🧱40</span>
-          </div>`;
+            <span class="recruit-title" style="color:#f39c12;">ကာကွယ်ရေးစင်</span>
+            <span class="recruit-cost">${hasSlots ? '🪵80 🧱40' : 'တပ်ဆင်ပြီး'}</span>
+          </div>
+        `;
+        defBtn.title = hasSlots ? `ကာကွယ်ရေးစင် တပ်ဆင်ရန် (${slotCount}/${maxDefenseSlots})` : `ကာကွယ်ရေးစင် အပြည့်တပ်ဆင်ပြီးပါပြီ`;
         defBtn.onclick = () => {
           if (building.addDefenseTower && building.addDefenseTower()) {
             this.updateSelection();
           }
         };
-        tierDiv.appendChild(defBtn);
-
-        this.entityActionsEl.appendChild(tierDiv);
+        this.entityActionsEl.appendChild(defBtn);
       }
     } else if (resource) {
       this.entityNameEl.textContent = resource.name;
