@@ -1,0 +1,6 @@
+{
+  "appId": "com.bagan.firstempires",
+  "appName": "First Empires Bagan",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>First Empires Bagan (ပုဂံ အင်ပါယာ)</title>
+  <link rel="icon" type="image/png" href="./assets/images/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&family=Padauk:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <!-- 3D Canvas Mount Point -->
+  <div id="game-container"></div>
+
+  <!-- Selection Box Overlay for Desktop & Mobile -->
+  <div id="selection-box" class="hidden"></div>
+
+  <!-- HUD Interface -->
+  <div id="ui-layer">
+    <!-- Top Resource Bar -->
+    <header id="top-bar">
+      <div class="resource-group">
+        <div class="res-item" title="စပါး/ရိက္ခာ (Food)">
+          <span class="res-icon">🌾</span>
+          <span id="res-food" class="res-val">200</span>
+        </div>
+        <div class="res-item" title="ထင်း/သစ် (Wood)">
+          <span class="res-icon">🪵</span>
+          <span id="res-wood" class="res-val">150</span>
+        </div>
+        <div class="res-item" title="အုတ်/ကျောက် (Brick/Stone)">
+          <span class="res-icon">🧱</span>
+          <span id="res-stone" class="res-val">100</span>
+        </div>
+        <div class="res-item" title="ရွှေ (Gold)">
+          <span class="res-icon">🪙</span>
+          <span id="res-gold" class="res-val">50</span>
+        </div>
+        <div class="res-item" title="လူဦးရေ (Population)">
+          <span class="res-icon">👥</span>
+          <span id="res-pop" class="res-val">5/20</span>
+        </div>
+      </div>
+
+      <!-- Enemy Attack Wave Countdown Indicator -->
+      <div id="wave-indicator" class="wave-indicator-box">
+        <span class="wave-icon">⚔️</span>
+        <span id="wave-timer-text" class="wave-text">ကျူးကျော်ရန်: --</span>
+        <span id="wave-num-badge" class="wave-badge">Wave 1</span>
+      </div>
+
+      <!-- Faction Special Power Activation Button -->
+      <button id="btn-faction-power" class="power-btn" title="တပ်မဟာ အထူးစွမ်းရည် အသုံးပြုရန်">
+        <span class="power-icon">📯</span>
+        <div class="power-text-box">
+          <span class="power-title">တော်ဝင်စည်တော်သံ</span>
+          <span id="power-cooldown-timer" class="power-timer hidden">45s</span>
+        </div>
+      </button>
+
+      <div class="system-controls">
+        <button id="btn-bgm-toggle" class="hud-btn active" title="တော်ဝင် နောက်ခံတေးသံစဉ် ဖွင့်/ပိတ် (Bagan BGM)">🎵</button>
+        <button id="btn-fullscreen" class="hud-btn" title="Toggle Fullscreen">⛶</button>
+        <button id="btn-help" class="hud-btn" title="Controls Guide">❓</button>
+      </div>
+    </header>
+
+    <!-- Bottom Command & Control Deck -->
+    <footer id="bottom-bar">
+      <!-- Minimap Container -->
+      <div id="minimap-panel">
+        <canvas id="minimap-canvas" width="220" height="220"></canvas>
+        <div class="minimap-label">ဧရာဝတီမြစ်ဝှမ်း • ပုဂံမြေပုံ</div>
+      </div>
+
+      <!-- Center Status / Selection & Command Unified Deck -->
+      <div id="selection-panel">
+        <div id="no-selection" class="selection-empty-hint">
+          <div class="empty-text-wrap">
+            <span class="empty-icon">🏛️</span>
+            <div class="empty-text">
+              <span class="empty-title">ပုဂံအင်ပါယာ တော်ဝင် ကွပ်ကဲမှုဌာနချုပ်</span>
+              <span class="empty-subtitle">နန်းတော် (သို့) လုပ်သားကို ရွေးချယ်ပြီး တည်ဆောက်ပါ</span>
+            </div>
+          </div>
+          <div class="empty-quick-btns">
+            <button id="btn-quick-palace" class="quick-nav-btn" title="မင်းနန်းတော်သို့ ချက်ချင်းသွား၍ ရွေးချယ်ပါ">
+              <span class="quick-nav-icon">🏛️</span>
+              <span class="quick-nav-label">နန်းတော် ရွေးရန်</span>
+            </button>
+            <button id="btn-quick-villager" class="quick-nav-btn" title="မြို့တည်လုပ်သားကို ရွေးချယ်ပြီး ဆောက်လုပ်ရေး စတင်ပါ">
+              <span class="quick-nav-icon">👨‍🌾</span>
+              <span class="quick-nav-label">အလုပ်သမား ရွေးရန်</span>
+            </button>
+          </div>
+        </div>
+        <div id="entity-details" class="hidden">
+          <div class="entity-info-col">
+            <div class="entity-header">
+              <span id="entity-avatar" class="entity-avatar">🏛️</span>
+              <div class="entity-title-box">
+                <div id="entity-name" class="entity-name">ပုဂံ မင်းနန်းတော်</div>
+                <div id="entity-type" class="entity-type">တော်ဝင် ဗဟိုအဆောက်အအုံ</div>
+              </div>
+            </div>
+            <div class="health-bar-container">
+              <div id="entity-hp-bar" class="health-bar-fill" style="width: 100%;"></div>
+            </div>
+            <div id="entity-hp-text" class="hp-text">HP: 2000 / 2000</div>
+            <div id="entity-subinfo" class="entity-subinfo"></div>
+          </div>
+          <!-- Action Buttons / Build Cards Deck -->
+          <div id="entity-actions" class="action-grid"></div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Tactical Formation & Stance Controls -->
+    <div id="tactical-dock">
+      <div class="dock-group">
+        <span class="dock-label">စစ်ဗျူဟာ:</span>
+        <button id="btn-form-line" class="tac-btn active" title="Line Formation">တန်းစီ</button>
+        <button id="btn-form-wedge" class="tac-btn" title="Wedge Formation">ဆင်စွယ်</button>
+        <button id="btn-form-box" class="tac-btn" title="Box Guard Formation">အကာ</button>
+      </div>
+      <div class="dock-group">
+        <span class="dock-label">အမိန့်:</span>
+        <button id="btn-stance-agg" class="tac-btn active" title="Aggressive">⚔️ တိုက်</button>
+        <button id="btn-stance-def" class="tac-btn" title="Defensive">🛡️ စောင့်</button>
+        <button id="btn-stance-hold" class="tac-btn" title="Stand Ground">🛑 ရပ်</button>
+      </div>
+    </div>
+
+    <!-- Mobile-specific quick controls (Visible on touch devices) -->
+    <div id="mobile-dock">
+      <button id="btn-touch-select" class="mobile-btn active" title="Select / Move Mode">🎯 ရွေးချယ်/သွား</button>
+      <button id="btn-touch-box" class="mobile-btn" title="Drag Box Select">📦 အုပ်စုရွေး</button>
+      <button id="btn-touch-attack" class="mobile-btn" title="Attack Mode">⚔️ တိုက်ခိုက်</button>
+    </div>
+
+    <!-- Battle Alert Banner (Slides down when waves attack) -->
+    <div id="battle-alert-banner" class="battle-alert-banner hidden">
+      <span class="alert-icon">⚠️</span>
+      <span id="alert-banner-text">သတိပေးချက်: ရန်သူ့တပ်ဖွဲ့ ကျူးကျော်လာနေပြီ!</span>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-logo-wrapper">
+          <img src="./assets/images/logo.png" alt="First Emperors Bagan" class="modal-logo" />
+        </div>
+        <h3>⚔️ First Emperors Bagan ထိန်းချုပ်ပုံ လမ်းညွှန်</h3>
+        <p><strong>💻 Desktop (ကွန်ပျူတာ):</strong></p>
+        <ul>
+          <li><strong>Left Click:</strong> ယူနစ် / အဆောက်အအုံ ရွေးချယ်ရန်</li>
+          <li><strong>Left Click + Drag:</strong> တပ်ဖွဲ့များကို အုပ်စုလိုက် သေတ္တာပုံစံ ဆွဲရွေးရန်</li>
+          <li><strong>Right Click:</strong> နေရာရွှေ့ရန် သို့မဟုတ် ရန်သူ/အဆောက်အအုံကို တိုက်ခိုက်ရန်</li>
+          <li><strong>W, A, S, D / Arrow Keys:</strong> မြေပုံကင်မရာ ရွှေ့ရန်</li>
+          <li><strong>Mouse Scroll:</strong> အနီး/အဝေး Zoom ဆွဲရန်</li>
+        </ul>
+        <p><strong>📱 Mobile / Android (ဖုန်း/တက်ဘလက်):</strong></p>
+        <ul>
+          <li><strong>Single Tap:</strong> ယူနစ် ရွေးချယ်ခြင်း</li>
+          <li><strong>Tap Ground:</strong> ရွေးထားသော ယူနစ်များ ထိုနေရာသို့ သွားခြင်း</li>
+          <li><strong>2-Finger Drag:</strong> မြေပုံကင်မရာ ရွှေ့လျားခြင်း</li>
+          <li><strong>Pinch:</strong> ကင်မရာ Zoom ချဲ့ခြင်း/ကျဉ်းခြင်း</li>
+        </ul>
+        <button id="btn-close-help" class="action-btn">ပိတ်မည် (Close)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Menu Overlay (C&C Generals / Dota Style) -->
+  <div id="main-menu-overlay" class="menu-backdrop">
+    <div class="menu-container generals-container">
+      
+      <!-- Logo Header -->
+      <div class="menu-logo-box">
+        <img src="./assets/images/logo.png" alt="First Empires Bagan" class="menu-logo" />
+        <div class="menu-burmese-title">ပုဂံ အင်ပါယာ • စစ်မဟာဗျူဟာ</div>
+      </div>
+
+      <!-- Main Screen Navigation (Exactly 4 Buttons: Singleplayer, Campaign, Multiplayer, Settings) -->
+      <div id="main-menu-buttons" class="main-screen-menu">
+        <button id="btn-menu-singleplayer" class="generals-menu-btn">
+          <span class="menu-btn-bullet">⚔️</span>
+          <span class="menu-btn-text">Singleplayer (စစ်ပွဲ ကစားမည်)</span>
+        </button>
+
+        <button id="btn-menu-campaign" class="generals-menu-btn">
+          <span class="menu-btn-bullet">📜</span>
+          <span class="menu-btn-text">Campaign (သမိုင်းဝင် စစ်ဆင်ရေး)</span>
+        </button>
+
+        <button id="btn-menu-multiplayer" class="generals-menu-btn">
+          <span class="menu-btn-bullet">🌐</span>
+          <span class="menu-btn-text">Multiplayer (Network / Internet)</span>
+        </button>
+
+        <button id="btn-menu-settings" class="generals-menu-btn">
+          <span class="menu-btn-bullet">⚙️</span>
+          <span class="menu-btn-text">Settings (ဆက်တင်များ)</span>
+        </button>
+      </div>
+
+      <!-- Singleplayer Skirmish Match Lobby (General/Dota Style) -->
+      <div id="skirmish-panel" class="lobby-panel hidden">
+        <div class="lobby-header">
+          <h2 class="lobby-title">⚔️ Singleplayer Match Lobby</h2>
+          <div class="lobby-tag">C&C Generals / Dota Skirmish Mode</div>
+        </div>
+
+        <div class="lobby-body-grid">
+          <!-- Left: Player Slots & Teams -->
+          <div class="lobby-column slots-col">
+            <div class="column-header">
+              <span>👥 Player Slots & Teams</span>
+              <select id="select-player-count" class="lobby-select-small">
+                <option value="2">2 Players (1v1)</option>
+                <option value="4" selected>4 Players (2v2)</option>
+              </select>
+            </div>
+
+            <div class="slots-table">
+              <!-- Slot 1 (Human) -->
+              <div class="slot-row human-row">
+                <span class="slot-idx">#1</span>
+                <span class="slot-type-badge human-badge">Human</span>
+                <span class="slot-player-name">Player 1</span>
+                <select id="slot1-team" class="slot-select team-select">
+                  <option value="1" selected>Team 1</option>
+                  <option value="2">Team 2</option>
+                </select>
+                <select id="slot1-faction" class="slot-select faction-select">
+                  <option value="bagan" selected>🇲🇲 ပုဂံတပ်တော်</option>
+                  <option value="chinese">🐉 တရုတ်မန်ချူးတပ်</option>
+                  <option value="ari">📿 အရည်းကြီးတပ်</option>
+                </select>
+              </div>
+
+              <!-- Slot 2 (AI Enemy) -->
+              <div class="slot-row ai-row">
+                <span class="slot-idx">#2</span>
+                <select id="slot2-ai-diff" class="slot-select ai-diff-select">
+                  <option value="easy">AI: Easy</option>
+                  <option value="normal" selected>AI: Normal</option>
+                  <option value="hard">AI: Hard</option>
+                </select>
+                <span class="slot-player-name">စစ်ဘုရင် AI</span>
+                <select id="slot2-team" class="slot-select team-select">
+                  <option value="1">Team 1</option>
+                  <option value="2" selected>Team 2</option>
+                </select>
+                <select id="slot2-faction" class="slot-select faction-select">
+                  <option value="chinese" selected>🐉 တရုတ်မန်ချူးတပ်</option>
+                  <option value="ari">📿 အရည်းကြီးတပ်</option>
+                  <option value="bagan">🇲🇲 ပုဂံတပ်တော်</option>
+                </select>
+              </div>
+
+              <!-- Slot 3 -->
+              <div class="slot-row slot-extra" id="slot-3-row">
+                <span class="slot-idx">#3</span>
+                <select id="slot3-status" class="slot-select slot-status-select">
+                  <option value="ai-easy">AI: Easy</option>
+                  <option value="ai-normal" selected>AI: Normal</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <span class="slot-player-name">မဟာမိတ် AI</span>
+                <select id="slot3-team" class="slot-select team-select">
+                  <option value="1" selected>Team 1</option>
+                  <option value="2">Team 2</option>
+                </select>
+                <select id="slot3-faction" class="slot-select faction-select">
+                  <option value="bagan" selected>🇲🇲 ပုဂံတပ်တော်</option>
+                  <option value="chinese">🐉 တရုတ်မန်ချူးတပ်</option>
+                  <option value="ari">📿 အရည်းကြီးတပ်</option>
+                </select>
+              </div>
+
+              <!-- Slot 4 -->
+              <div class="slot-row slot-extra" id="slot-4-row">
+                <span class="slot-idx">#4</span>
+                <select id="slot4-status" class="slot-select slot-status-select">
+                  <option value="ai-easy">AI: Easy</option>
+                  <option value="ai-normal" selected>AI: Normal</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <span class="slot-player-name">ရန်သူ့မဟာမိတ် AI</span>
+                <select id="slot4-team" class="slot-select team-select">
+                  <option value="1">Team 1</option>
+                  <option value="2" selected>Team 2</option>
+                </select>
+                <select id="slot4-faction" class="slot-select faction-select">
+                  <option value="ari" selected>📿 အရည်းကြီးတပ်</option>
+                  <option value="chinese">🐉 တရုတ်မန်ချူးတပ်</option>
+                  <option value="bagan">🇲🇲 ပုဂံတပ်တော်</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Map Selection & Match Options -->
+          <div class="lobby-column map-col">
+            <div class="column-header">
+              <span>🗺️ Map Selection</span>
+            </div>
+
+            <div class="map-selector-box">
+              <select id="select-map" class="map-dropdown">
+                <option value="ayeyarwady" selected>ဧရာဝတီ မြစ်ဝှမ်း (1v1 / 2v2)</option>
+                <option value="plains">ပုဂံ ရှေးဟောင်း လွင်ပြင် (2v2)</option>
+                <option value="popa">ပုပ္ပါး တောင်စောင်း (2v2)</option>
+              </select>
+
+              <div class="map-card-preview">
+                <div class="map-thumb-placeholder">
+                  <span class="map-thumb-icon">🏞️</span>
+                  <div id="map-name-display" class="map-preview-name">ဧရာဝတီ မြစ်ဝှမ်း</div>
+                  <div class="map-preview-meta">220x220 • မြစ်ကွေ့၊ သစ်တော၊ စေတီပုထိုးများ</div>
+                </div>
+              </div>
+
+              <div class="match-options-grid">
+                <div class="option-field">
+                  <label>💰 စတင် ရိက္ခာ:</label>
+                  <select id="select-starting-resources" class="option-select">
+                    <option value="standard" selected>Standard (250)</option>
+                    <option value="high">High (1000)</option>
+                  </select>
+                </div>
+                <div class="option-field">
+                  <label>🏆 အောင်ပွဲ စည်းမျဉ်း:</label>
+                  <select id="select-victory-rule" class="option-select">
+                    <option value="conquest" selected>Conquest</option>
+                    <option value="regicide">Regicide</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lobby Action Buttons -->
+        <div class="lobby-actions-footer">
+          <button id="btn-back-from-skirmish" class="lobby-btn-back">⬅️ Back</button>
+          <button id="btn-start-game" class="lobby-btn-start">▶ Start Game</button>
+        </div>
+      </div>
+
+      <!-- Campaign Mission Selection Panel -->
+      <div id="campaign-panel" class="lobby-panel hidden">
+        <div class="lobby-header">
+          <h2 class="lobby-title">📜 သမိုင်းဝင် ဇာတ်လမ်း မစ်ရှင်များ (Campaign)</h2>
+          <div class="lobby-tag">ပုဂံခေတ် စစ်ဆင်ရေး ဇာတ်လမ်းအခန်းများ</div>
+        </div>
+
+        <div class="campaign-list" style="padding: 15px 0;">
+          <div class="campaign-card" data-mission="0">
+            <div class="campaign-card-title">မစ်ရှင် ၁: ပုဂံအင်ပါယာ အစ (Dawn of the Empire)</div>
+            <div class="campaign-card-desc">ပုဂံရွှေပြည်တော် စတင်ထူထောင်ချိန်ဖြစ်သည်။ အခြေခံလူနေအိမ်များ ဆောက်လုပ်ပြီး စစ်သည်တပ်ရုံတည်ဆောက်ကာ ကာကွယ်ရေးတပ်ဖွဲ့ကို စတင်ဖွဲ့စည်းပါ။</div>
+          </div>
+          <div class="campaign-card" data-mission="1">
+            <div class="campaign-card-title">မစ်ရှင် ၂: တော်ဝင်မြင်းတပ်နှင့် ခရီး (Rise of the Cavalry)</div>
+            <div class="campaign-card-desc">မြင်းတပ်စခန်းကို အဆင့်မြှင့်တင်ပြီး မြင်းသည်တော်များဖြင့် နယ်ခြားတစ်လျှောက် ကင်းလှည့်စစ်ဆေးကာ ရန်သူ့ကျူးကျော်မှုများကို ရှင်းလင်းပါ။</div>
+          </div>
+          <div class="campaign-card" data-mission="2">
+            <div class="campaign-card-title">မစ်ရှင် ၃: မဟာပုဂံ စစ်ပွဲကြီး (The Great Battle of Bagan)</div>
+            <div class="campaign-card-desc">ရန်သူ့တပ်မကြီး နယ်စပ်သို့ ရောက်ရှိလာပြီဖြစ်သည်။ ဆင်တင်းတော်မှ တိုက်ဆင်ကြီးများ ထုတ်လုပ်ကာ ရန်သူ့ပင်မခံတပ်ကို အမြစ်ပြတ် ချေမှုန်းပါ။</div>
+          </div>
+        </div>
+
+        <div class="lobby-footer-actions">
+          <button id="btn-back-from-campaign" class="lobby-back-btn">← နောက်သို့ (Back)</button>
+        </div>
+      </div>
+
+      <!-- Multiplayer Network / Internet Screen -->
+      <div id="multiplayer-panel" class="lobby-panel hidden">
+        <div class="lobby-header">
+          <h2 class="lobby-title">🌐 Multiplayer (Network / Internet)</h2>
+          <div class="lobby-tag">C&C Generals / Dota Online & LAN Lobby</div>
+        </div>
+
+        <div class="mp-tabs">
+          <button id="tab-mp-lan" class="mp-tab-btn active">📡 Local Network (Wi-Fi / LAN)</button>
+          <button id="tab-mp-online" class="mp-tab-btn">🌍 Internet (Online Servers)</button>
+        </div>
+
+        <div class="mp-lobby-body">
+          <div class="mp-rooms-header">
+            <span>ရရှိနိုင်သော အခန်းများ (Available Rooms):</span>
+            <button id="btn-refresh-rooms" class="btn-tiny-refresh">🔄 Refresh</button>
+          </div>
+
+          <div class="mp-rooms-list" id="mp-rooms-list">
+            <div class="mp-room-item selected">
+              <span class="room-status-dot">🟢</span>
+              <span class="room-title">Bagan War #1 (Host: King Anawrahta)</span>
+              <span class="room-map">Map: Ayeyarwady</span>
+              <span class="room-slots">1/4 Players</span>
+            </div>
+          </div>
+
+          <div class="mp-controls-grid">
+            <button id="btn-host-room" class="mp-action-card">
+              <span class="mp-card-icon">🏰</span>
+              <span class="mp-card-title">Create Room (အခန်းသစ် ဖွင့်မည်)</span>
+            </button>
+            <button id="btn-join-room" class="mp-action-card">
+              <span class="mp-card-icon">⚔️</span>
+              <span class="mp-card-title">Join Room (အခန်းထဲ ဝင်မည်)</span>
+            </button>
+          </div>
+          
+          <div id="mp-status-msg" class="mp-status">💡 Multiplayer Network Engine အဆင်သင့် ဖြစ်နေပါပြီ။ Wi-Fi (သို့) Internet ချိတ်ဆက်၍ အခန်းဖွင့် ကစားနိုင်ပါသည်။</div>
+        </div>
+
+        <div class="lobby-actions-footer">
+          <button id="btn-back-from-mp" class="lobby-btn-back">⬅️ Back (ပင်မ မီနူးသို့)</button>
+        </div>
+      </div>
+
+      <!-- Settings Screen -->
+      <div id="settings-panel" class="lobby-panel hidden">
+        <div class="lobby-header">
+          <h2 class="lobby-title">⚙️ Game Settings (ဆက်တင်များ)</h2>
+        </div>
+
+        <div class="settings-body-grid">
+          <div class="settings-group">
+            <h3 class="settings-group-title">🔊 Audio Settings (အသံ ဆက်တင်)</h3>
+            <div class="setting-row">
+              <label>Master Volume:</label>
+              <input type="range" id="vol-master" min="0" max="100" value="80" class="setting-slider" />
+              <span id="vol-master-val">80%</span>
+            </div>
+            <div class="setting-row">
+              <label>Sound FX (ဓားခုတ်သံ၊ မြှားသံ):</label>
+              <input type="range" id="vol-sfx" min="0" max="100" value="90" class="setting-slider" />
+              <span id="vol-sfx-val">90%</span>
+            </div>
+            <div class="setting-row">
+              <label>War Drums Music (စစ်ဗုံတေးသံ):</label>
+              <input type="range" id="vol-music" min="0" max="100" value="70" class="setting-slider" />
+              <span id="vol-music-val">70%</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-title">🖥️ Graphics & Display (ရုပ်ထွက်)</h3>
+            <div class="setting-row">
+              <label>Full Screen (မျက်နှာပြင် အပြည့်):</label>
+              <button id="btn-settings-fullscreen" class="setting-toggle-btn">Toggle ⛶</button>
+            </div>
+            <div class="setting-row">
+              <label>Performance Mode:</label>
+              <select id="select-perf-mode" class="option-select">
+                <option value="high" selected>High Visuals (60 FPS + Shadows)</option>
+                <option value="balanced">Battery Saver (Mobile)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="lobby-actions-footer">
+          <button id="btn-back-from-settings" class="lobby-btn-back">⬅️ Back (ပင်မ မီနူးသို့)</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Game Victory / Defeat Modal -->
+  <div id="game-result-modal" class="modal hidden">
+    <div class="modal-content result-content">
+      <div id="result-icon" class="result-icon">🏆</div>
+      <h2 id="result-title" class="result-title">အောင်ပွဲ ရရှိပါသည်!</h2>
+      <div id="result-subtitle" class="result-subtitle">ရန်သူ့စစ်ခံတပ်ကို အောင်မြင်စွာ ချေမှုန်းနိုင်ခဲ့သည်</div>
+
+      <div class="result-stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">⏱️ တိုက်ပွဲ ကြာချိန်</span>
+          <span id="stat-time" class="stat-value">00:00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">⚔️ သုတ်သင်ခဲ့သော ရန်သူ</span>
+          <span id="stat-kills" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">👥 မွေးထုတ်ခဲ့သော တပ်ဖွဲ့</span>
+          <span id="stat-trained" class="stat-value">0</span>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button id="btn-restart-game" class="action-btn-launch">🔄 ပြန်လည် ဆော့ကစားမည်</button>
+        <button id="btn-return-menu" class="action-btn-back">🏠 ပင်မ စာမျက်နှာ</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
