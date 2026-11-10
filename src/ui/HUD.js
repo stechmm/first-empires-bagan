@@ -351,7 +351,7 @@ export class HUD {
       // Show 3D Rally Flag tip for production buildings
       if (['palace', 'barracks', 'stables', 'elephant_pen'].includes(building.type)) {
         if (this.entitySubinfoEl) {
-          this.entitySubinfoEl.innerHTML = '<span class="rally-point-indicator" title="မြေပြင်ပေါ် Right-Click (သို့မဟုတ် Tap) နှိပ်၍ စစ်သည်စုရပ်နေရာ ရွှေ့ပါ">🚩 စုရပ်အလံ: မြေပြင်ပေါ် Right-Click နှိပ်ပါ</span>';
+          this.entitySubinfoEl.innerHTML = '<span class="rally-point-indicator" title="မြေပြင်ပေါ် Right-Click (သို့မဟုတ် Tap) နှိပ်၍ စစ်သည်စုရပ်နေရာ ရွှေ့ပါ">🚩 စုရပ်အလံ: Right-Click</span>';
         }
       }
 
@@ -472,9 +472,9 @@ export class HUD {
           upgradeBtn.className = 'action-btn building-upgrade-card';
           upgradeBtn.style.opacity = canUp ? '1.0' : '0.65';
           upgradeBtn.innerHTML = `
+            <div class="card-badge" style="background:#2980b9;">Lv.${currentTier + 1}</div>
             <div class="thumb-container" style="border-color: #2980b9;">
               <span style="font-size: 18px;">⬆️</span>
-              <div class="card-badge" style="background:#2980b9;">Lv.${currentTier + 1}</div>
             </div>
             <div class="recruit-text-box">
               <span class="recruit-title" style="color:#5dade2;">အဆင့် ${currentTier + 1} တိုး</span>
@@ -515,9 +515,9 @@ export class HUD {
         defBtn.className = 'action-btn building-defense-card';
         defBtn.style.opacity = hasSlots ? '1.0' : '0.6';
         defBtn.innerHTML = `
+          <div class="card-badge" style="background:${hasSlots ? '#d35400' : '#7f8c8d'};">${slotCount}/${maxDefenseSlots}</div>
           <div class="thumb-container" style="border-color: #d35400;">
             <span style="font-size: 18px;">🏹</span>
-            <div class="card-badge" style="background:${hasSlots ? '#d35400' : '#7f8c8d'};">${slotCount}/${maxDefenseSlots}</div>
           </div>
           <div class="recruit-text-box">
             <span class="recruit-title" style="color:#f39c12;">ကာကွယ်ရေးစင်</span>
