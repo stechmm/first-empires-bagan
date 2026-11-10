@@ -291,6 +291,9 @@ export class SelectionSystem {
         if (hit.length > 0) {
           this.selectedUnits.forEach(u => u.attackTarget(target));
           this.createTargetMarker(target.mesh.position, 0xe74c3c); // Red target ring
+          if (this.game.mpClient && this.game.mpClient.isMultiplayer) {
+            this.game.mpClient.sendUnitAttack(this.selectedUnits.map(u => u.id), target.id);
+          }
           return;
         }
       }
@@ -303,6 +306,9 @@ export class SelectionSystem {
         if (hit.length > 0) {
           this.selectedUnits.forEach(u => u.attackTarget(target));
           this.createTargetMarker(target.mesh.position, 0xe74c3c); // Red target ring
+          if (this.game.mpClient && this.game.mpClient.isMultiplayer) {
+            this.game.mpClient.sendUnitAttack(this.selectedUnits.map(u => u.id), target.id);
+          }
           return;
         }
       }
@@ -387,10 +393,15 @@ export class SelectionSystem {
           offsetZ = (row - rowSize / 2) * spacing;
         }
 
-        u.moveTo({
+        const destPos = {
           x: targetPoint.x + offsetX,
           z: targetPoint.z + offsetZ
-        });
+        };
+        u.moveTo(destPos);
+
+        if (this.game.mpClient && this.game.mpClient.isMultiplayer) {
+          this.game.mpClient.sendUnitMove([u.id], destPos);
+        }
       });
     }
   }

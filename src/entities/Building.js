@@ -386,6 +386,11 @@ export class Building {
       const dest = this.rallyPoint ? { x: this.rallyPoint.x, z: this.rallyPoint.z } : { x: spawnPos.x, z: spawnPos.z + 4 };
       unit.moveTo(dest);
       this.game.hud.showFloatingText(`+1 ${unit.name.split(' ')[0]}`, this.mesh.position, '#2ecc71');
+
+      // Replicate trained unit to opponent in multiplayer
+      if (this.game.mpClient && this.game.mpClient.isMultiplayer && this.faction === 'player') {
+        this.game.mpClient.sendUnitTrained(unit);
+      }
     }
   }
 
@@ -486,6 +491,10 @@ export class Building {
       this.game.hud.showFloatingText(`⬆️ Tier ${this.tier}`, this.mesh.position, '#f1c40f');
     }
     if (this.game.soundSystem) this.game.soundSystem.playHammer();
+
+    if (this.game.mpClient && this.game.mpClient.isMultiplayer && this.faction === 'player') {
+      this.game.mpClient.sendBuildingUpgraded(this);
+    }
     return true;
   }
 
@@ -525,6 +534,10 @@ export class Building {
     if (this.game.hud) {
       this.game.hud.showNotification('🏹 ကာကွယ်ရေးစင် တပ်ဆင်ပြီး!', 'success');
       this.game.hud.showFloatingText('🏹 +ကာကွယ်ရေးစင်', this.mesh.position, '#e67e22');
+    }
+
+    if (this.game.mpClient && this.game.mpClient.isMultiplayer && this.faction === 'player') {
+      this.game.mpClient.sendDefenseTowerAdded(this, slot);
     }
     return true;
   }

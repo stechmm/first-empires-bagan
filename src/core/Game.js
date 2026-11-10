@@ -14,6 +14,8 @@ import { FogOfWarSystem } from '../systems/FogOfWarSystem.js';
 import { FactionPowersSystem } from '../systems/FactionPowersSystem.js';
 import { CampaignManager } from './CampaignManager.js';
 import { TechTreeSystem } from '../systems/TechTreeSystem.js';
+import { MultiplayerClient } from '../multiplayer/MultiplayerClient.js';
+import { MultiplayerLobby } from '../ui/MultiplayerLobby.js';
 
 // Entities
 import { Palace } from '../entities/buildings/Palace.js';
@@ -124,6 +126,8 @@ export class Game {
     this.techTree = new TechTreeSystem(this);
     this.enemyAI = new EnemyCommanderAI(this);
     this.menuManager = new MenuManager(this);
+    this.mpClient = new MultiplayerClient(this);
+    this.mpLobby = new MultiplayerLobby(this, this.mpClient);
   }
 
   spawnInitialBaseAndArmy() {
@@ -219,6 +223,86 @@ export class Game {
     // Announcement
     const enemyName = this.enemyAI.factionConfig ? this.enemyAI.factionConfig.name : 'ရန်သူ့တပ်';
     this.hud.showFloatingText(`⚔️ စစ်ပွဲ စတင်ပါပြီ! (${enemyName} ကို ချေမှုန်းပါ)`, new THREE.Vector3(0, 5, 0), '#f1c40f');
+  }
+
+  startMultiplayerMatch(data) {
+    this.resetBattlefield();
+
+    // Disable single-player AI
+    if (this.enemyAI) {
+      this.enemyAI.isWaveDisabled = true;
+      this.enemyAI.enabled = false;
+      this.enemyAI.stop();
+    }
+
+    const isHost = (this.mpClient.role === 'host');
+    const mySpawn = isHost ? data.hostSpawn : data.guestSpawn;
+    const enemySpawn = isHost ? data.guestSpawn : data.hostSpawn;
+
+    // 1. My Palace & Starting Villagers
+    const myPalace = new Palace(this, { x: mySpawn.x, z: mySpawn.z, faction: 'player' });
+    this.buildings.push(myPalace);
+
+    const v1 = new Villager(this, { x: mySpawn.x + 3, z: mySpawn.z + 2, faction: 'player' });
+    const v2 = new Villager(this, { x: mySpawn.x - 3, z: mySpawn.z + 2, faction: 'player' });
+    const v3 = new Villager(this, { x: mySpawn.x, z: mySpawn.z + 4.5, faction: 'player' });
+    this.units.push(v1, v2, v3);
+
+    // 2. Rival Palace & Starting Villagers
+    const enemyPalace = new Palace(this, { x: enemySpawn.x, z: enemySpawn.z, faction: 'enemy' });
+    this.buildings.push(enemyPalace);
+
+    const ev1 = new Villager(this, { x: enemySpawn.x + 3, z: enemySpawn.z + 2, faction: 'enemy' });
+    const ev2 = new Villager(this, { x: enemySpawn.x - 3, z: enemySpawn.z + 2, faction: 'enemy' });
+    const ev3 = new Villager(this, { x: enemySpawn.x, z: enemySpawn.z + 4.5, faction: 'enemy' });
+    this.units.push(ev1, ev2, ev3);
+
+    // 3. Balanced Resource Nodes across the battlefield
+    const nodes = [
+      new ResourceNode(this, { resourceType: 'gold', x: 0, z: -16, amount: 6000 }),
+      new ResourceNode(this, { resourceType: 'gold', x: 0, z: 16, amount: 6000 }),
+      new ResourceNode(this, { resourceType: 'stone', x: 0, z: 0, amount: 5000 }),
+
+      new ResourceNode(this, { resourceType: 'food', x: -32, z: -12, amount: 3000 }),
+      new ResourceNode(this, { resourceType: 'wood', x: -44, z: 0, amount: 5000 }),
+      new ResourceNode(this, { resourceType: 'gold', x: -36, z: 14, amount: 4000 }),
+      new ResourceNode(this, { resourceType: 'stone', x: -26, z: -20, amount: 3500 }),
+
+      new ResourceNode(this, { resourceType: 'food', x: 32, z: -12, amount: 3000 }),
+      new ResourceNode(this, { resourceType: 'wood', x: 44, z: 0, amount: 5000 }),
+      new ResourceNode(this, { resourceType: 'gold', x: 36, z: 14, amount: 4000 }),
+      new ResourceNode(this, { resourceType: 'stone', x: 26, z: -20, amount: 3500 })
+    ];
+    this.resourceNodes.push(...nodes);
+
+    // 4. Starting Resources
+    this.economySystem.resources = {
+      food: 800,
+      wood: 450,
+      stone: 250,
+      gold: 200,
+      population: 3,
+      maxPopulation: 15
+    };
+    this.economySystem.updateHUD();
+
+    // 5. Position Camera over My Base
+    this.cameraController.target.set(mySpawn.x, 0, mySpawn.z);
+    this.cameraController.zoom = 35;
+    this.cameraController.updateCameraPosition();
+
+    // 6. Reset Fog of War
+    if (this.fogOfWar) this.fogOfWar.reset();
+
+    // 7. Start War Music
+    if (this.soundSystem) {
+      this.soundSystem.startWarDrums();
+    }
+
+    this.isGameRunning = true;
+    if (this.hud) {
+      this.hud.showNotification(`⚔️ စစ်ပွဲစတင်ပါပြီ! ပြိုင်ဘက်နန်းတော်ကို ဖြိုခွင်းလော့!`, 'success');
+    }
   }
 
   stopBattle() {

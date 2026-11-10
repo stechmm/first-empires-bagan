@@ -48,6 +48,22 @@ export class BuildingPlacementSystem {
     });
   }
 
+  getBuildingClass(type) {
+    const map = {
+      house: House,
+      palace: Palace,
+      barracks: Barracks,
+      blacksmith: Blacksmith,
+      stables: Stables,
+      elephant_pen: ElephantPen,
+      pagoda: Pagoda,
+      watchtower: Watchtower,
+      wall: Wall,
+      gate: Gate
+    };
+    return map[type] || null;
+  }
+
   checkPrerequisites(type) {
     const playerBuildings = this.game.buildings.filter(b => b.faction === 'player');
     const hasType = (t) => playerBuildings.some(b => b.type === t);
@@ -177,6 +193,11 @@ export class BuildingPlacementSystem {
     if (newBuilding) {
       this.game.buildings.push(newBuilding);
       this.playPlacementEffect(pos);
+
+      // Replicate to rival player in multiplayer
+      if (this.game.mpClient && this.game.mpClient.isMultiplayer) {
+        this.game.mpClient.sendBuildingPlaced(newBuilding);
+      }
 
       // Assign builder villager(s)
       let builders = [];
